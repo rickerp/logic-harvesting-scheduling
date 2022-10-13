@@ -1,4 +1,16 @@
-# [ALC] Algorithms for Computational Logic : Project
+# [PYSAT] Harvesting Scheduling
+
+Originally a project for my college, Instituto Superior Técnico, course, Algorithms for Computational Logic (ALC).  
+The original statement of the project is [here](./statement.pdf). Below, is a summarized version of it.
+
+## Run
+
+```bash
+pdm install
+pdm run python main.py < input.file > output.file
+# test
+./test/test.sh
+```
 
 ## Definitions:
 
@@ -39,6 +51,7 @@ T = { 1, 2, 3 };
 Amin >= 7
 
 ### Solution:
+
 * Total profit 18
 * { U1, U2, U3, U4, U5, U6, U7 } = { 2, 1, 2, 3, 1, N, N }
     * Periods harvested (N: Natural reserve)
@@ -46,19 +59,23 @@ Amin >= 7
 ## Format:
 
 ### Input
-  * 1st line: n
-  * 2nd line: k
-  * 3rd line: Ai, i ∈ U (integers separated by a space)
-  * 4th line - (3+n)th line: number of neighbours of the ith unit followed by their identifiers
-  * (4+n)th line - (3+n+k)th line: profit of each area separated by a space of the jth period
-  * (4+n+k)th line: Amin
+
+* 1st line: n
+* 2nd line: k
+* 3rd line: Ai, i ∈ U (integers separated by a space)
+* 4th line - (3+n)th line: number of neighbours of the ith unit followed by their identifiers
+* (4+n)th line - (3+n+k)th line: profit of each area separated by a space of the jth period
+* (4+n+k)th line: Amin
+
 ### Output
-  * 1st line: total profit
-  * 2nd line - (1+k)th line: The jth line contains the number of units harvested in the jth period
-    followed by their identifiers
-  * (2+k)th line: The number of units that represent the natural reserve followed by their identifiers
+
+* 1st line: total profit
+* 2nd line - (1+k)th line: The jth line contains the number of units harvested in the jth period
+  followed by their identifiers
+* (2+k)th line: The number of units that represent the natural reserve followed by their identifiers
 
 #### Example input:
+
 ```
 7
 3
@@ -77,6 +94,7 @@ Amin >= 7
 ```
 
 #### Example output
+
 ```
 18
 2 2 5

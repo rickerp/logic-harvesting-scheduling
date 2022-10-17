@@ -105,7 +105,6 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
         for j_to_harvest in range(0, k + 2):
             for j_not_to_harvest in range(j_to_harvest + 1, k + 2):
                 clauses.append([-E(i, j_to_harvest), -E(i, j_not_to_harvest)])
-                pass  # UNSAT
 
     # Neighbour units cannot be harvested in the same time period
     # * if U3 is neighbour of U1 and U4, then:
@@ -116,18 +115,23 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
             if i_neighbour <= i: continue
             for j in range(1, k + 1):
                 clauses.append([-E(i, j), -E(i_neighbour, j)])
-                # pass  # UNSAT
 
     # Natural reserve must be contiguous with a minimum area size Amin >= 0
 
-    # * Contiguous, for each unit:
-    #   * if 'i' is natural reserve, each unit not neighbour of 'i' must not be a natural reserve,
-    #   p.e, if 1 is a NR and 3 is not a neighbour of it, then: 1N -> ~3N (~1N V ~3N)
-    for i, i_neighbours in zip(range(1, n + 1), neighbours):
-        for i_other in range(i + 1, n + 1):
-            if i_other not in i_neighbours:
-                clauses.append([-E(i, k + 1), -E(i_other, k + 1)])
-                # pass  # SAT
+    # * Contiguous:
+    # For each unit, it's grandchildren
+    for i in range(1, n+1):
+        i_neighbours = neighbours[i-1]
+        for i_n in i_neighbours:
+            i_n_neighbours = neighbours[i_n-1]
+            for i_n_n in i_n_neighbours:
+                i_n_n_neighbours = neighbours[i_n_n-1]
+                if i not in i_n_n_neighbours:
+                    clauses.append([
+                        -E(i, k+1),
+                        -E(i_n_n, k+1),
+                        *[E(interception_i, k+1) for interception_i in set(i_neighbours).intersection(i_n_n_neighbours)]
+                    ])
 
     # * The natural reserve area must be >= Amin
     cnf = PBEnc.atleast(
@@ -136,7 +140,7 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
         bound=amin,
         top_id=(k + 2) * n
     )
-    clauses += cnf.clauses  # SAT
+    clauses += cnf.clauses
 
     return clauses
 

@@ -15,7 +15,7 @@ TOTAL_COUNT=0
 for fpath in $TEST_FILES; do
   f_dir="$(dirname "${fpath}")"
   f_input="$(basename -- "${fpath}")"
-#  f_expected="${f_input%.*}.out"
+  f_expected="${f_input%.*}.out"
   f_output="${f_input%.*}.output"
 
   echo -n "Testing ${f_input}... "
@@ -23,15 +23,21 @@ for fpath in $TEST_FILES; do
   echo -n "${exec_time}s "
 
   echo -n "Checking output file..."
-  result=$("$CHECKER_PATH" "$f_dir/$f_input" "$f_dir/$f_output")
+  checker_result=$("$CHECKER_PATH" "$f_dir/$f_input" "$f_dir/$f_output")
+  output_cost=$(head -n 1 "$f_dir/$f_output")
+  expected_cost=$(head -n 1 "$f_dir/$f_expected")
 
-  if [ "$result" = "$OK_STRING" ]; then
+  if [ "$checker_result" != "$OK_STRING" ]; then
+    echo -e "${WRONG_COLOR}NOT OK${NO_COLOR}"
+    echo "$checker_result"
+    echo ""
+  elif [ "$output_cost" != "$expected_cost" ]; then
+    echo -e "${WRONG_COLOR}NOT OK${NO_COLOR}"
+    echo "Solution not optimal. Expected: ${expected_cost}. Got ${output_cost}."
+    echo ""
+  else
     echo -e "${CORRECT_COLOR}OK${NO_COLOR}"
     (( CORRECT_COUNT++ ))
-  else
-    echo -e "${WRONG_COLOR}NOT OK${NO_COLOR}"
-    echo "$result"
-    echo ""
   fi
 
   (( TOTAL_COUNT++ ))

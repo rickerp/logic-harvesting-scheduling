@@ -2,6 +2,7 @@
 [ALC] Algorithms for Computational Logic : Project
 Author: @rickerp
 """
+from pysat.card import CardEnc
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
 from pysat.pb import PBEnc
@@ -52,29 +53,38 @@ def parse_output(profit: int, harvest: list[list[int]], natural_reserve: list[in
     return out
 
 
-def define_encoding(n: int = None):
+def define_encoding(n: int = None, k: int = None):
     """
-    Defines the encoding to map the problem variables i, j to SAT variables
+    Defines the encoding to map the problem variables i, j and d to SAT variables.
+    The 'd' variable is also used to auxiliary variables
     @param n: the max of i
+    @param k: the max of j
     @return: a function which receiving the i, j problem variables returns a number (the SAT variable) > 0
     """
-    if not n:
+    if not n or not k:
         def nil(i, j):
             raise NotImplemented()
 
         return nil, nil
     else:
-        def encoding_func(i, j):
+        def encoding_func(i: int = None, j: int = None, d: int = None):
             """
-            Maps the problem variables i, j to SAT variables
+            Maps the problem variables i, j and d to SAT variables
             * if j = 0, the i unit is not harvested (and it's not a natural reserve)
             * if j = k+1, the unit is a natural reserve
-            (not harvested !=
+            (not harvested != natural reserve)
             @param i: the unit identifier
             @param j: the period number, 0 or natural reserve (k+1)
+            @param d: (used for auxiliary variables) depth of the unit in the tree
             @return: the SAT variable
             """
-            return j * n + i
+            assert j != d and (j is None or d is None)
+
+            if j is not None:
+                return j * n + i
+
+            if d is not None:
+                return (k + d + 1) * n + i
 
         def decoding_func(x: int):
             """
@@ -116,29 +126,59 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
             for j in range(1, k + 1):
                 clauses.append([-E(i, j), -E(i_neighbour, j)])
 
-    # Natural reserve must be contiguous with a minimum area size Amin >= 0
+    # Natural reserve is contiguous, encoding: Tid tree, i unit, d depth
+    # * Calculate a priori the max depth of the tree, the worst case would be for the units with less area
+    # being the natural reserve (until it reaches the minimum area). This works because we always want
+    # the optimal solution and if there are any conflicts in harvesting periods we can just simply consider
+    # the conflict unit as non-harvested
+    max_depth = 0
+    nr_min_area_sum = 0
+    for i_area in sorted(areas):
+        nr_min_area_sum += i_area
+        max_depth += 1
+        if nr_min_area_sum >= amin:
+            break
 
-    # * Contiguous:
-    # For each unit, it's grandchildren
-    for i in range(1, n+1):
-        i_neighbours = neighbours[i-1]
-        for i_n in i_neighbours:
-            i_n_neighbours = neighbours[i_n-1]
-            for i_n_n in i_n_neighbours:
-                i_n_n_neighbours = neighbours[i_n_n-1]
-                if i not in i_n_n_neighbours:
-                    clauses.append([
-                        -E(i, k+1),
-                        -E(i_n_n, k+1),
-                        *[E(interception_i, k+1) for interception_i in set(i_neighbours).intersection(i_n_n_neighbours)]
-                    ])
+    top_id = (k + max_depth + 2) * n
 
-    # * The natural reserve area must be >= Amin
+    # * There can only be one root: SUM(Ti1, i in U) <= 1
+    cnf = CardEnc.atmost([E(i, d=1) for i in range(1, n + 1)], top_id=top_id)
+    clauses += cnf.clauses
+    top_id = cnf.nv
+
+    if max_depth > 1:
+        # * If a unit belongs to the tree at depth d, one and only one neighbour belongs to the tree at depth d-1 or
+        # the unit it's a root: Tid -> Ti1 or SUM(Tnd-1, n in i_neighbours) = 1
+        for i in range(1, n + 1):
+            for d in range(2, max_depth + 1):
+                cnf = CardEnc.equals([E(i_n, d=d-1) for i_n in neighbours[i - 1]], top_id=top_id)
+                clauses += [cls + [-E(i, d=d)] for cls in cnf.clauses]
+                top_id = cnf.nv
+
+        # * Each unit must either not belong to the tree or only be present in one level in the tree
+        #   - for each unit i: SUM(Tid, d in D) <= 1
+        # * If it belongs to the tree is a natural reserve
+        for i in range(1, n + 1):
+            cnf = CardEnc.atmost([E(i, d=d) for d in range(1, max_depth + 1)], top_id=top_id)
+            clauses += cnf.clauses
+            top_id = cnf.nv
+
+    # * If a unit is a natural reserve it must be in the tree: (1)
+    #   * 1R -> T11 or T12 or ... or T1m <=> ~1R or T11 or T12 or ... or T1m
+    # * If a unit is in the tree it must be a natural reserve: (2)
+    #   * T11 or T12 or ... or T1m -> 1R <=> (~T11 or 1R) and (~T12 or 1R) and ... and (~T1m or 1R)
+    for i in range(1, n + 1):
+        i_tree_vars = [E(i, d=d) for d in range(1, max_depth+1)]
+        clauses.append([-E(i, j=k+1)] + i_tree_vars)  # (1)
+        for i_tree_var in i_tree_vars:
+            clauses.append([E(i, j=k+1), -i_tree_var])  # (2)
+
+    # * The natural reserve area must be >= Amin >= 0
     cnf = PBEnc.atleast(
         lits=[E(i, k + 1) for i in range(1, n + 1)],
         weights=[areas[i - 1] for i in range(1, n + 1)],
         bound=amin,
-        top_id=(k + 2) * n
+        top_id=top_id
     )
     clauses += cnf.clauses
 
@@ -152,7 +192,7 @@ def main():
 
     # Define the encoding/decoding with a static 'n', so that we don't have to pass it everytime
     global E, D
-    E, D = define_encoding(n)
+    E, D = define_encoding(n, k)
 
     cnf = WCNF()
     cnf.extend(get_hard_clauses(n, k, areas, neighbours, amin))

@@ -80,11 +80,10 @@ def define_encoding(n: int = None, k: int = None):
             """
             assert j != d and (j is None or d is None)
 
-            if j is not None:
-                return j * n + i
-
             if d is not None:
-                return (k + d + 1) * n + i
+                j = k + d + 1
+
+            return j * n + i
 
         def decoding_func(x: int):
             """
@@ -112,7 +111,7 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
     #   * 12 -> ~11; 12 -> ~13; ...; 12 -> ~1kth (12 -> ~11 <=> ~12 V ~11 <=> ~11 V ~12 - skip)
     #   (also include natural reserve: if natural reserve cannot be harvested - same behaviour as another period)
     for i in range(1, n + 1):
-        for j_to_harvest in range(0, k + 2):
+        for j_to_harvest in range(0, k + 1):
             for j_not_to_harvest in range(j_to_harvest + 1, k + 2):
                 clauses.append([-E(i, j_to_harvest), -E(i, j_not_to_harvest)])
 
@@ -131,56 +130,57 @@ def get_hard_clauses(n: int, k: int, areas: list[int], neighbours: list[list[int
     # being the natural reserve (until it reaches the minimum area). This works because we always want
     # the optimal solution and if there are any conflicts in harvesting periods we can just simply consider
     # the conflict unit as non-harvested
-    max_depth = 0
-    nr_min_area_sum = 0
-    for i_area in sorted(areas):
-        nr_min_area_sum += i_area
-        max_depth += 1
-        if nr_min_area_sum >= amin:
-            break
+    if amin > 0:
+        max_depth = 0
+        nr_min_area_sum = 0
+        for i_area in sorted(areas):
+            nr_min_area_sum += i_area
+            max_depth += 1
+            if nr_min_area_sum >= amin:
+                break
 
-    top_id = (k + max_depth + 2) * n
+        top_id = (k + max_depth + 2) * n
 
-    # * There can only be one root: SUM(Ti1, i in U) <= 1
-    cnf = CardEnc.atmost([E(i, d=1) for i in range(1, n + 1)], top_id=top_id)
-    clauses += cnf.clauses
-    top_id = cnf.nv
+        # * There can only be one root: SUM(Ti1, i in U) <= 1
+        cnf = CardEnc.atmost([E(i, d=1) for i in range(1, n + 1)], top_id=top_id)
+        clauses += cnf.clauses
+        top_id = cnf.nv
 
-    if max_depth > 1:
-        # * If a unit belongs to the tree at depth d, one and only one neighbour belongs to the tree at depth d-1 or
-        # the unit it's a root: Tid -> Ti1 or SUM(Tnd-1, n in i_neighbours) = 1
-        for i in range(1, n + 1):
-            for d in range(2, max_depth + 1):
-                cnf = CardEnc.equals([E(i_n, d=d-1) for i_n in neighbours[i - 1]], top_id=top_id)
-                clauses += [cls + [-E(i, d=d)] for cls in cnf.clauses]
+        if max_depth > 1:
+            # * If a unit belongs to the tree at depth d, one and only one neighbour belongs to the tree at depth d-1 or
+            # the unit it's a root: Tid -> Ti1 or SUM(Tnd-1, n in i_neighbours) = 1
+            for i in range(1, n + 1):
+                for d in range(2, max_depth + 1):
+                    cnf = CardEnc.equals([E(i_n, d=d-1) for i_n in neighbours[i - 1]], top_id=top_id)
+                    clauses += [[-E(i, d=d)] + cls for cls in cnf.clauses]
+                    top_id = cnf.nv
+
+            # * Each unit must either not belong to the tree or only be present in one level in the tree
+            #   - for each unit i: SUM(Tid, d in D) <= 1
+            # * If it belongs to the tree is a natural reserve
+            for i in range(1, n + 1):
+                cnf = CardEnc.atmost([E(i, d=d) for d in range(1, max_depth + 1)], top_id=top_id)
+                clauses += cnf.clauses
                 top_id = cnf.nv
 
-        # * Each unit must either not belong to the tree or only be present in one level in the tree
-        #   - for each unit i: SUM(Tid, d in D) <= 1
-        # * If it belongs to the tree is a natural reserve
+        # * If a unit is a natural reserve it must be in the tree: (1)
+        #   * 1R -> T11 or T12 or ... or T1m <=> ~1R or T11 or T12 or ... or T1m
+        # * If a unit is in the tree it must be a natural reserve: (2)
+        #   * T11 or T12 or ... or T1m -> 1R <=> (~T11 or 1R) and (~T12 or 1R) and ... and (~T1m or 1R)
         for i in range(1, n + 1):
-            cnf = CardEnc.atmost([E(i, d=d) for d in range(1, max_depth + 1)], top_id=top_id)
-            clauses += cnf.clauses
-            top_id = cnf.nv
+            i_tree_vars = [E(i, d=d) for d in range(1, max_depth+1)]
+            clauses.append([-E(i, j=k+1)] + i_tree_vars)  # (1)
+            for i_tree_var in i_tree_vars:
+                clauses.append([E(i, j=k+1), -i_tree_var])  # (2)
 
-    # * If a unit is a natural reserve it must be in the tree: (1)
-    #   * 1R -> T11 or T12 or ... or T1m <=> ~1R or T11 or T12 or ... or T1m
-    # * If a unit is in the tree it must be a natural reserve: (2)
-    #   * T11 or T12 or ... or T1m -> 1R <=> (~T11 or 1R) and (~T12 or 1R) and ... and (~T1m or 1R)
-    for i in range(1, n + 1):
-        i_tree_vars = [E(i, d=d) for d in range(1, max_depth+1)]
-        clauses.append([-E(i, j=k+1)] + i_tree_vars)  # (1)
-        for i_tree_var in i_tree_vars:
-            clauses.append([E(i, j=k+1), -i_tree_var])  # (2)
-
-    # * The natural reserve area must be >= Amin >= 0
-    cnf = PBEnc.atleast(
-        lits=[E(i, k + 1) for i in range(1, n + 1)],
-        weights=[areas[i - 1] for i in range(1, n + 1)],
-        bound=amin,
-        top_id=top_id
-    )
-    clauses += cnf.clauses
+        # * The natural reserve area must be >= Amin >= 0
+        cnf = PBEnc.atleast(
+            lits=[E(i, k + 1) for i in range(1, n + 1)],
+            weights=[areas[i - 1] for i in range(1, n + 1)],
+            bound=amin,
+            top_id=top_id
+        )
+        clauses += cnf.clauses
 
     return clauses
 
@@ -202,12 +202,13 @@ def main():
         for j in range(1, k + 1):
             cnf.append([E(i, j)], weight=profits[j - 1][i - 1])
 
-    solver = RC2(cnf)
+    solver = RC2(cnf, adapt=True)
     solution = solver.compute()
 
     if not solution:
         raise Exception("UNSAT")
 
+    # Decoding
     total_profit = 0
     harvest = [[] for _ in range(0, k + 2)]
     for x in solution:

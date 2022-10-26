@@ -4,3 +4,4 @@ test/data/*.output
 requirements.txt
 
 .DS_Store
+.idea

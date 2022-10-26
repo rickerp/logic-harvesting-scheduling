@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 [ALC] Algorithms for Computational Logic : Project
 Author: @rickerp

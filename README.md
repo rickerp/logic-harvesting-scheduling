@@ -1,16 +1,29 @@
-# [PYSAT] Harvesting Scheduling
+# Harvesting Scheduling
 
+Logical problem which involves restrictions such as contiguity, solved in two ways: using SAT solver (
+pysat) [sat.py](./sat.py); SMT solver (z3-solver) [smt.py](./smt.py).  
 Originally a project for my college, Instituto Superior Técnico, course, Algorithms for Computational Logic (ALC).  
-The original statement of the project is [here](./statement.pdf). Below, is a summarized version of it.
+The original statement of the project for SAT solving is [here](./docs/sat-statement.pdf) and for SMT solving
+is [here](./docs/smt-statement.pdf) - essentially they are the same just the 'project goals' are different. Below, is a
+summarized version of it.
 
 ## Run
 
 ```bash
 pdm install
-pdm run python main.py < input.file > output.file
+
+pdm run python sat.py < input.file > output.file  # using SAT
+pdm run python smt.py < input.file > output.file  # using SMT
+
 # test
-./test/test.sh
+./test/test.sh  # by default uses SMT, change inside file
 ```
+
+## Summary
+
+There are units of farming land which have different profits depending on the period which are harvested. There is also
+natural reserve units which are units that cannot be harvested and must be contiguous. Each unit as a area associated
+with, and there is a minimum area for the total area of the natural reserve units.
 
 ## Definitions:
 

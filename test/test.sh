@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMMAND="pdm run python main.py"
+COMMAND="pdm run python smt.py"
 TEST_FILES="test/data/*.hsp"
 CHECKER_PATH="test/hsp-checker"
 

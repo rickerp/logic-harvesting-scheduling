@@ -1,6 +1,6 @@
 [project]
 name = "Harvesting Scheduling"
-version = "1.0.1-dev"
+version = "1.0.1"
 description = ""
 authors = [
     {name = "Ricardo Fernandes", email = "pdgrickerp@gmail.com"},
@@ -9,6 +9,7 @@ dependencies = [
     "python-sat>=0.1.7.dev19",
     "pypblib>=0.0.4",
     "z3-solver>=4.11.2.0",
+    "setuptools>=65.5.0",
 ]
 requires-python = ">=3.10"
 license = {text = "MIT"}

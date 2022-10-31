@@ -12,6 +12,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "65.5.0"
+requires_python = ">=3.7"
+summary = "Easily download, build, install, upgrade, and uninstall Python packages"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
@@ -24,7 +30,7 @@ summary = "an efficient SMT solver library"
 
 [metadata]
 lock_version = "4.0"
-content_hash = "sha256:e4fc806a21d7207c051521014b284ff9c0d6b8359a30db34f4959e834e899b77"
+content_hash = "sha256:b6aea18abfff99109e3e3c71938eb95a5f05d3c310c7ec6e94daa1c8151ff83c"
 
 [metadata.files]
 "pypblib 0.0.4" = [
@@ -91,6 +97,10 @@ content_hash = "sha256:e4fc806a21d7207c051521014b284ff9c0d6b8359a30db34f4959e834
     {url = "https://files.pythonhosted.org/packages/ec/4e/9d5b0ccb90fd9242f2720b93c86f9dacf8e6a5e0e85c771f943d1486f154/python_sat-0.1.7.dev19-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:e87793237b526d40db06f04e54884e4a411e1c9918d0e9907e60a5311343be18"},
     {url = "https://files.pythonhosted.org/packages/f9/13/3d0e9b78017519592a2457db7dcb2621eebf082a8fe9e75ef1311b885594/python_sat-0.1.7.dev19-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ed63c38fd6d481f7bb04fbb937dde039613892d6c07651a9f69c36804a8dc67c"},
     {url = "https://files.pythonhosted.org/packages/fa/f8/277ed167e034018eed1021358a0acb68556f304e34c8a23cf1d165767316/python_sat-0.1.7.dev19-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:aa4aec198e3819582dda4f9928b43e7f9175e5f741092e9e049a7c2307b1c570"},
+]
+"setuptools 65.5.0" = [
+    {url = "https://files.pythonhosted.org/packages/41/82/7f54bbfe5c247a8c9f78d8d1d7c051847bcb78843c397b866dba335c1e88/setuptools-65.5.0-py3-none-any.whl", hash = "sha256:f62ea9da9ed6289bfe868cd6845968a2c854d1427f8548d52cae02a42b4f0356"},
+    {url = "https://files.pythonhosted.org/packages/c5/41/247814d8b7a044717164c74080725a6c8f3d2b5fc82b34bd825b617df663/setuptools-65.5.0.tar.gz", hash = "sha256:512e5536220e38146176efb833d4a62aa726b7bbff82cfbc8ba9eaa3996e0b17"},
 ]
 "six 1.16.0" = [
     {url = "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},

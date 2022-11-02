@@ -16,7 +16,8 @@ pdm run python sat.py < input.file > output.file  # using SAT
 pdm run python smt.py < input.file > output.file  # using SMT
 
 # test
-./test/test.sh  # by default uses SMT, change inside file
+./test/test.sh pdm run python sat.py  # test SAT
+./test/test.sh pdm run python smt.py  # test SMT
 ```
 
 ## Summary

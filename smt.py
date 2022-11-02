@@ -36,14 +36,6 @@ def main():
             solver.add(Implies(nri, And(*[Not(pj_i) for pj_i in i_periods])))
 
     if amin > 0:
-        dmax = 0
-        nr_min_area_sum = 0
-        for i_area in sorted(areas):
-            nr_min_area_sum += i_area
-            dmax += 1
-            if nr_min_area_sum >= amin:
-                break
-
         for idx, (nri, di) in enumerate(zip(nr, depths)):
             solver.add(
                 # 0 <= di,  # Di >= 0, Di = 0 : i does not belong to the tree, Di = d : i belongs to the tree a d level

@@ -1,7 +1,9 @@
 __pycache__
 __pypackages__
-test/data/*.output
 requirements.txt
+
+test/data/*.output
+test/data/*.pdf
 
 .DS_Store
 .idea

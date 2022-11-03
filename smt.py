@@ -1,5 +1,5 @@
 from common import parse_input, parse_output
-from z3 import Optimize, Int, And, Implies, Sum, Bool, AtMost, Or, Not
+from z3 import Optimize, And, Implies, Sum, Bool, AtMost, Or, Not
 
 
 # n:            number of units
@@ -17,9 +17,8 @@ def main():
 
     solver = Optimize()
 
-    periods = [[Bool(f"H{i}{j}") for j in range(1, k + 1)] for i in range(1, n + 1)]
-    nr = [Bool(f"NR{i}") for i in range(1, n + 1)]
-    depths = [Int(f'D{i}') for i in range(1, n + 1)]
+    periods = [[Bool(f"H_{i}_{j}") for j in range(1, k + 1)] for i in range(1, n + 1)]
+    nr = [Bool(f"NR_{i}") for i in range(1, n + 1)]
 
     for idx, (i_periods, nri) in enumerate(zip(periods, nr)):
         # A unit of land can only be harvested once :
@@ -28,7 +27,7 @@ def main():
         # Pi neighbours must not have the same value
         for i_n in neighbours[idx]:
             if idx + 1 > i_n:
-                for pj_i, pj_in in zip(i_periods, periods[i_n-1]):
+                for pj_i, pj_in in zip(i_periods, periods[i_n - 1]):
                     solver.add(Or(Not(pj_i), Not(pj_in)))
 
         # If natural reserve, cannot be harvested
@@ -36,17 +35,27 @@ def main():
             solver.add(Implies(nri, And(*[Not(pj_i) for pj_i in i_periods])))
 
     if amin > 0:
-        for idx, (nri, di) in enumerate(zip(nr, depths)):
+        dmax = 0
+        nr_min_area_sum = 0
+        for i_area in sorted(areas):
+            nr_min_area_sum += i_area
+            dmax += 1
+            if nr_min_area_sum >= amin:
+                break
+
+        depths = [[Bool(f"D_{i}_{d}") for d in range(1, dmax + 1)] for i in range(1, n + 1)]
+
+        for idx, (nri, i_depths) in enumerate(zip(nr, depths)):
             solver.add(
-                # 0 <= di,  # Di >= 0, Di = 0 : i does not belong to the tree, Di = d : i belongs to the tree a d level
-                Implies(1 <= di, nri),  # Di >= 1 -> NR (Pi == k + 1)
-                Implies(nri, 1 <= di),  # NR (Pi == k + 1) -> Di >= 1
-                Implies(di > 1, Sum(*[di == depths[i_n - 1] + 1 for i_n in neighbours[idx]]) == 1),
-                # i with depth d can only have 1 neighbour with depth d-1
+                Implies(Or(*i_depths), nri),  # AtLeast(Di, 1) -> NR
+                Implies(nri, Or(*i_depths)),  # NR -> AtLeast(Di, 1)
             )
+            for di_d_idx, di_d in zip(range(1, len(i_depths) + 1), i_depths[1:]):
+                solver.add(Implies(di_d, Sum(*[depths[i_n - 1][di_d_idx - 1] for i_n in neighbours[idx]]) == 1))
+                # i with depth d can only have 1 neighbour with depth d-1)
 
         # Must only have one root
-        solver.add(Sum(*[di == 1 for di in depths]) == 1)
+        solver.add(AtMost(*[i_depths[0] for i_depths in depths], 1))
 
         # Area of natural reserve must be greater than Amin
         solver.add(Sum(*[areas[idx] * nri for idx, nri in enumerate(nr)]) >= amin)

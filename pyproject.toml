@@ -1,6 +1,6 @@
 [project]
 name = "Harvesting Scheduling"
-version = "1.1.0"
+version = "1.1.1"
 description = ""
 authors = [
     {name = "Ricardo Fernandes", email = "pdgrickerp@gmail.com"},
